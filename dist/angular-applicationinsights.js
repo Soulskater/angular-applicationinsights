@@ -1,3 +1,8 @@
+// Code here will be linted with JSHint.
+/* jshint ignore:start */
+(function(angular){
+// Code here will be ignored by JSHint.
+/* jshint ignore:end */
 /// <reference path="typings/angularjs/angular.d.ts" />
 var Tools = (function () {
     function Tools(angular) {
@@ -342,9 +347,7 @@ var StackFrame = (function () {
     //}
     StackFrame.prototype.setLineNumber = function (v) {
         if (!Tools.isNumber(v)) {
-            /* test-code */
-            console.log('LineNumber is ' + v);
-            /* end-test-code */
+
             this.lineNumber = undefined;
             return;
         }
@@ -527,11 +530,11 @@ var LogInterceptor = (function () {
                 _this._warnFn = $delegate.warn;
                 _this._errorFn = $delegate.error;
                 _this._logFn = $delegate.log;
-                $delegate.debug = _this.delegator(_this._debugFn, 'debug');
-                $delegate.info = _this.delegator(_this._infoFn, 'info');
-                $delegate.warn = _this.delegator(_this._warnFn, 'warn');
-                $delegate.error = _this.delegator(_this._errorFn, 'error');
-                $delegate.log = _this.delegator(_this._logFn, 'log');
+                $delegate.debug = angular.extend(_this.delegator(_this._debugFn, 'debug'), _this._debugFn);
+                $delegate.info = angular.extend(_this.delegator(_this._infoFn, 'info'), _this._infoFn);
+                $delegate.warn = angular.extend(_this.delegator(_this._warnFn, 'warn'), _this._warnFn);
+                $delegate.error = angular.extend(_this.delegator(_this._errorFn, 'error'), _this._errorFn);
+                $delegate.log = angular.extend(_this.delegator(_this._logFn, 'log'), _this._logFn);
                 return $delegate;
             }
         ]);
@@ -749,16 +752,26 @@ var ApplicationInsights = (function () {
         }
         return validateProperties;
     };
+    ApplicationInsights.prototype.validateDuration = function (duration) {
+        if (Tools.isNullOrUndefined(duration)) {
+            return null;
+        }
+        if (!Tools.isNumber(duration) || duration < 0) {
+            this._log.warn("The value of the durations parameter must be a positive number");
+            return null;
+        }
+        return duration;
+    };
     ApplicationInsights.prototype.validateSeverityLevel = function (level) {
         // https://github.com/Microsoft/ApplicationInsights-JS/blob/7bbf8b7a3b4e3610cefb31e9d61765a2897dcb3b/JavaScript/JavaScriptSDK/Contracts/Generated/SeverityLevel.ts
         /*
          export enum SeverityLevel
          {
-            Verbose = 0,
-            Information = 1,
-            Warning = 2,
-            Error = 3,
-            Critical = 4,
+         Verbose = 0,
+         Information = 1,
+         Warning = 2,
+         Error = 3,
+         Critical = 4,
          }
 
          We need to map the angular $log levels to these for app insights
@@ -801,14 +814,15 @@ var ApplicationInsights = (function () {
         catch (e) {
         }
     };
-    ApplicationInsights.prototype.trackPageView = function (pageName, pageUrl, properties, measurements) {
+    ApplicationInsights.prototype.trackPageView = function (pageName, pageUrl, properties, measurements, duration) {
         // TODO: consider possible overloads (no name or url but properties and measurements)
         var data = this.generateAppInsightsData(ApplicationInsights.names.pageViews, ApplicationInsights.types.pageViews, {
             ver: 1,
             url: Tools.isNullOrUndefined(pageUrl) ? this._location.absUrl() : pageUrl,
             name: Tools.isNullOrUndefined(pageName) ? this._location.path() : pageName,
             properties: this.validateProperties(properties),
-            measurements: this.validateMeasurements(measurements)
+            measurements: this.validateMeasurements(measurements),
+            duration: this.validateDuration(duration)
         });
         this.sendData(data);
     };
@@ -841,7 +855,7 @@ var ApplicationInsights = (function () {
         });
         this.sendData(data);
     };
-    ApplicationInsights.prototype.trackException = function (exception, cause) {
+    ApplicationInsights.prototype.trackException = function (exception, properties) {
         if (Tools.isNullOrUndefined(exception)) {
             return;
         }
@@ -858,7 +872,8 @@ var ApplicationInsights = (function () {
                     parsedStack: parsedStack,
                     hasFullStack: !Tools.isNullOrUndefined(parsedStack)
                 }
-            ]
+            ],
+            properties: this.validateProperties(properties)
         });
         this.sendData(data);
     };
@@ -939,10 +954,23 @@ angularAppInsights.config([
 angularAppInsights.provider("applicationInsightsService", function () { return new AppInsightsProvider(); });
 // the run block sets up automatic page view tracking
 angularAppInsights.run([
-    "$rootScope", "$location", "applicationInsightsService", function ($rootScope, $location, applicationInsightsService) {
-        $rootScope.$on("$locationChangeSuccess", function () {
+    "$rootScope", "$location", "applicationInsightsService",
+    function ($rootScope, $location, applicationInsightsService) {
+        var locationChangeStartOn;
+        $rootScope.$on("$locationChangeStart", function () {
             if (applicationInsightsService.options.autoPageViewTracking) {
-                applicationInsightsService.trackPageView(applicationInsightsService.options.applicationName + $location.path());
+                locationChangeStartOn = (new Date()).getTime();
+            }
+        });
+        $rootScope.$on("$viewContentLoaded", function (e, view) {
+            if (applicationInsightsService.options.autoPageViewTracking
+                && locationChangeStartOn) {
+                var duration = (new Date()).getTime() - locationChangeStartOn;
+                var name = applicationInsightsService.options.applicationName + $location.path();
+                if (view) {
+                    name += "#" + view;
+                }
+                applicationInsightsService.trackPageView(name, null, null, null, duration);
             }
         });
     }
@@ -979,3 +1007,8 @@ var AppInsightsProvider = (function () {
     return AppInsightsProvider;
 }());
 //# sourceMappingURL=angular-applicationinsights.js.map
+// Code here will be linted with JSHint.
+/* jshint ignore:start */
+})(window.angular);
+// Code here will be ignored by JSHint.
+/* jshint ignore:end */

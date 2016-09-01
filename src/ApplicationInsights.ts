@@ -9,19 +9,19 @@
 /// <reference path="./HTTPRequest.ts" />
 class ApplicationInsights {
 
-    private _localStorage: AppInsightsStorage;
-    private _locale: angular.ILocaleService;
-    private _window: angular.IWindowService;
-    private _location: angular.ILocationService;
+    private _localStorage:AppInsightsStorage;
+    private _locale:angular.ILocaleService;
+    private _window:angular.IWindowService;
+    private _location:angular.ILocationService;
     private _httpRequestFactory:()=>IHttpRequest;
 
-    private _log: any;
-    private _exceptionHandler: any;
+    private _log:any;
+    private _exceptionHandler:any;
 
-    private _logInterceptor: LogInterceptor;
-    private _exceptionInterceptor: ExceptionInterceptor;
+    private _logInterceptor:LogInterceptor;
+    private _exceptionInterceptor:ExceptionInterceptor;
     private _sessionKey = "$$appInsights__session";
-    options: Options;
+    options:Options;
 
     private static namespace = "Microsoft.ApplicationInsights.";
     private static names = {
@@ -39,21 +39,21 @@ class ApplicationInsights {
         exception: ApplicationInsights.namespace + "ExceptionData"
     };
 
-    private _commonProperties: any;
+    private _commonProperties:any;
 
     private _version = "angular:0.2.8";
     private _analyticsServiceUrl = "https://dc.services.visualstudio.com/v2/track";
     private _contentType = "application/json";
 
 
-    constructor(localStorage: AppInsightsStorage,
-        $locale: angular.ILocaleService,
-        $window: angular.IWindowService,
-        $location: angular.ILocationService,
-        logInterceptor: LogInterceptor,
-        exceptionInterceptor: ExceptionInterceptor,
-        httpRequestFactory:()=>IHttpRequest,
-        options: Options) {
+    constructor(localStorage:AppInsightsStorage,
+                $locale:angular.ILocaleService,
+                $window:angular.IWindowService,
+                $location:angular.ILocationService,
+                logInterceptor:LogInterceptor,
+                exceptionInterceptor:ExceptionInterceptor,
+                httpRequestFactory:()=>IHttpRequest,
+                options:Options) {
 
         this._localStorage = localStorage;
         this._locale = $locale;
@@ -194,11 +194,11 @@ class ApplicationInsights {
         /*
          export enum SeverityLevel
          {
-            Verbose = 0,
-            Information = 1,
-            Warning = 2,
-            Error = 3,
-            Critical = 4,
+         Verbose = 0,
+         Information = 1,
+         Warning = 2,
+         Error = 3,
+         Critical = 4,
          }
 
          We need to map the angular $log levels to these for app insights
@@ -226,14 +226,14 @@ class ApplicationInsights {
         var headers = {};
         headers["Accept"] = this._contentType; // jshint ignore:line
         headers["Content-Type"] = this._contentType;
-         var options: HttpRequestOptions = {
+        var options:HttpRequestOptions = {
             method: "POST",
             url: this._analyticsServiceUrl,
             headers: headers,
             data: data,
         };
         try {
-           request.send(options,
+            request.send(options,
                 () => {
                     ExceptionInterceptor.errorOnHttpCall = false;
                     // this callback will be called asynchronously
@@ -249,7 +249,7 @@ class ApplicationInsights {
         }
     }
 
-    trackPageView(pageName?, pageUrl?, properties?, measurements?, duration?: number) {
+    trackPageView(pageName?, pageUrl?, properties?, measurements?, duration?:number) {
         // TODO: consider possible overloads (no name or url but properties and measurements)
         const data = this.generateAppInsightsData(ApplicationInsights.names.pageViews,
             ApplicationInsights.types.pageViews,
@@ -296,13 +296,13 @@ class ApplicationInsights {
             ApplicationInsights.types.metrics,
             {
                 ver: 1,
-                metrics: [{ name: name, value: value }],
+                metrics: [{name: name, value: value}],
                 properties: this.validateProperties(properties)
             });
         this.sendData(data);
     }
 
-    trackException(exception, cause) {
+    trackException(exception, properties) {
         if (Tools.isNullOrUndefined(exception)) {
             return;
         }
@@ -322,7 +322,8 @@ class ApplicationInsights {
                         parsedStack: parsedStack,
                         hasFullStack: !Tools.isNullOrUndefined(parsedStack)
                     }
-                ]
+                ],
+                properties: this.validateProperties(properties)
             });
         this.sendData(data);
     }
